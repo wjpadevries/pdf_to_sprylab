@@ -7,7 +7,7 @@
 <body>
 
 <?php
-
+define ('SCRIPT_VERSION' , 'v0.1');
 define ('EOL' , "<br>\n");
 
 // include enterprise config
@@ -20,6 +20,9 @@ require_once __DIR__ . '/classes/enterprise.class.php';
 
 require_once __DIR__ . '/classes/progressBar.class.php';
 $pg = New progressBar;
+
+
+LogHandler::Log( 'purplePublish', 'DEBUG', 'starting script (version:' . SCRIPT_VERSION . ')');
 
 // --------------------------------------
 // get the parameters from the URL
@@ -48,7 +51,7 @@ try {
     $user = BizSession::checkTicket( $ticket );
 } catch ( BizException $e ) {
     // if we reach this point, we will not continue.
-    LogHandler::Log( 'downloadPDF', 'DEBUG', 'ERROR:Not a valid ticket' );
+    LogHandler::Log( 'purplePublish', 'DEBUG', 'ERROR:Not a valid ticket' );
     print "ERROR:Not a valid ticket<br>";
     exit;
 }
@@ -97,7 +100,7 @@ $pdfJob['bookFile']   = PDF_TEMPFOLDER . '/' . $outputFile . '.indb';
 // -----------------------
 // clean up before we run
 // -----------------------
-LogHandler::Log( '-PP-Startup-', 'DEBUG',"Cleanup our future output files");
+LogHandler::Log( 'PurplePublish', 'DEBUG',"Cleanup our future output files");
 if ( file_exists($pdfJob['outputFile'])){unlink( $pdfJob['outputFile']);}
 if ( file_exists($pdfJob['coverImage'])){unlink( $pdfJob['coverImage']);}
 if ( file_exists($pdfJob['bookFile']))  {unlink( $pdfJob['bookFile']);}
@@ -107,14 +110,14 @@ if ( file_exists($pdfJob['bookFile']))  {unlink( $pdfJob['bookFile']);}
 // --------------------------------------
 // log some info
 // --------------------------------------
-LogHandler::Log( '-PP-Startup-', 'DEBUG', '------------------------' );
-LogHandler::Log( '-PP-Startup-', 'DEBUG', 'parameters from commandline');
-LogHandler::Log( '-PP-Startup-', 'DEBUG', 'brand:' . $inPub );
-LogHandler::Log( '-PP-Startup-', 'DEBUG', 'issue:' . $inIssue );
-LogHandler::Log( '-PP-Startup-', 'DEBUG', 'edition:' . $inEdi );
-LogHandler::Log( '-PP-Startup-', 'DEBUG', 'category:' . $inCato );
-LogHandler::Log( '-PP-Startup-', 'DEBUG', 'state:' . $inState );
-LogHandler::Log( '-PP-Startup-', 'DEBUG', 'pdfJob:' . print_r( $pdfJob,1));
+LogHandler::Log( 'PurplePublish', 'DEBUG', '------------------------' );
+LogHandler::Log( 'PurplePublish', 'DEBUG', 'parameters from commandline');
+LogHandler::Log( 'PurplePublish', 'DEBUG', 'brand:' . $inPub );
+LogHandler::Log( 'PurplePublish', 'DEBUG', 'issue:' . $inIssue );
+LogHandler::Log( 'PurplePublish', 'DEBUG', 'edition:' . $inEdi );
+LogHandler::Log( 'PurplePublish', 'DEBUG', 'category:' . $inCato );
+LogHandler::Log( 'PurplePublish', 'DEBUG', 'state:' . $inState );
+LogHandler::Log( 'PurplePublish', 'DEBUG', 'pdfJob:' . print_r( $pdfJob,1));
 
 addToReport('');
 
@@ -147,19 +150,27 @@ $pg->pbUpdate();
 // ---------------------
 if ( ! file_exists($pdfJob['outputFile'])) {
 
-    LogHandler::Log( '-PP-Startup-', 'DEBUG',"Ouputfile not found , creating PDF now");
+    LogHandler::Log( 'PurplePublish', 'DEBUG',"Ouputfile not found , creating PDF now");
 
     // collect all layouts for this issue
     // get the pagesInfo as simplyfied structure
-    LogHandler::Log( '-PP-Startup-', 'DEBUG', 'Calling getPagesAsArray' );
+    LogHandler::Log( 'PurplePublish', 'DEBUG', 'Calling getPagesAsArray' );
     $pagesArray = getPagesAsArray(  $inPub, $inIssue, $inEdi  );
 
     $statusList = mapEnterpriseStatus( $pdfJob['brand'] );
-    LogHandler::Log( '-PP-Startup-', 'DEBUG', 'StatusList for this brand:' . print_r($statusList,1));
+    LogHandler::Log( 'PurplePublish', 'DEBUG', 'StatusList for this brand:' . print_r($statusList,1));
     addToReport('Pages in status [' . implode(',', $statusList).'] are selected');
 
     // convert the getPages output to something we can use in InDesignServer
     $IDSinstructionList = createIDSinstructionList($pdfJob, $pagesArray , $statusList);
+    
+    if ( $IDSinstructionList === false ){
+    	// no layouts found so we quit
+    	addToReport( "No layouts found that match specified status");
+    	$pg->pbFinished();
+ 		showReport();
+    	exit;
+    }
     $pdfJob['layouts'] = $IDSinstructionList; // add to generic job
 
     $pg->detail = "Task: creating pdf pages via InDesign Server";
@@ -176,10 +187,10 @@ if ( ! file_exists($pdfJob['outputFile'])) {
 
     if (! combinePDF($pdfJob)) {
         print "<div class='error'>ERROR: Failed to create PDF</div>" . EOL;
-        LogHandler::Log( '-PP-Startup-', 'DEBUG',"ERROR: while creating outputfile");
+        LogHandler::Log( 'PurplePublish', 'DEBUG',"ERROR: while creating outputfile");
 
     }*/
-    LogHandler::Log( '-PP-Startup-', 'DEBUG',"outputfile created");
+    LogHandler::Log( 'PurplePublish', 'DEBUG',"outputfile created");
     print "<h3>PDF succesfully created</h3>" . EOL;
 }
 
@@ -189,7 +200,7 @@ if ( ! file_exists($pdfJob['outputFile'])) {
 if ( SENDTOSPRYLAB &&
      file_exists($pdfJob['outputFile']) ) {
     addToReport('Sending PDF-file ['. $pdfJob['outputFile'].'] to SpryLab');
-    LogHandler::Log( '-PP-Startup-', 'DEBUG',"Ouputfile found , sending to Purple");
+    LogHandler::Log( 'PurplePublish', 'DEBUG',"Ouputfile found , sending to Purple");
     // call publishTo functionality
     // in this case 'purple'
     //print "Calling PurplePublishing" . EOL;
@@ -217,7 +228,7 @@ $enterprise->saveIssue();
 
 
 showReport();
-LogHandler::Log( '-PP-Startup-', 'DEBUG','all done');
+LogHandler::Log( 'PurplePublish', 'DEBUG','all done');
 print "<hr>";
 
 
@@ -225,7 +236,7 @@ print "<hr>";
 // clean up
 // ---------
 if ( REMOVEPUBLISHEDFILES ) {
-    LogHandler::Log( '-PP-Startup-', 'DEBUG',"Removing files");
+    LogHandler::Log( 'PurplePublish', 'DEBUG',"Removing files");
     if ( file_exists($pdfJob['outputFile'])){unlink( $pdfJob['outputFile']);}
     if ( file_exists($pdfJob['coverImage'])){unlink( $pdfJob['coverImage']);}
     if ( file_exists($pdfJob['bookFile']))  {unlink( $pdfJob['bookFile']);}
@@ -260,12 +271,15 @@ function getPagesAsArray(  $inPub, $inIssue, $inEdi  )
         $request->Ticket = $ticket;
         $request->Issue = new Issue();
         $request->Issue->Id = $issueId;
+        $request->Issue->Name = '';
+        
         $request->Issue->OverrulePublication = false;
         $request->IDs = null;
         // #001 only specify edition when available
         if ( $editionId != -1 ) {
             $request->Edition = new Edition();
             $request->Edition->Id = $editionId;
+            $request->Edition->Name = '';
         }
         // #001 end
         LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG', "Calling getPagesInfo: " . print_r( $request, 1 ) );
@@ -384,6 +398,7 @@ function createIDSinstructionList($pdfJob, $pagesArray , $stateList = null)
 		{
 			$layoutPages[$page['pagePosition']] = $outputPath . '-' . $page['pagePosition'] . '.pdf';
 		}
+		
 		if ( $addLayout){
             LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG', "adding layout to result list");
             $idsInstructions[ $layouts['objID'] ] = $layoutPages;
@@ -391,6 +406,12 @@ function createIDSinstructionList($pdfJob, $pagesArray , $stateList = null)
         }
 
 	}
+	if ( $usedLayoutCount == 0)
+	{
+		LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG', "return:false, no layouts in correct state found");
+		return false;
+	}
+	
     LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG', "returning:$usedLayoutCount of $layoutCount layouts");
 	return $idsInstructions;
 }
@@ -424,6 +445,7 @@ function IDSCreatePDF  ( $IDSjob )
     }
 
     $serverVersion = BizFileStoreXmpFileInfo::getInDesignDocumentVersion($layoutID);
+    LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG',  "ServerVersion: " . print_r( $serverVersion,1));
     $job = new InDesignServerJob();
     $job->JobScript = $scriptContent;
     $job->JobParams = array(
@@ -600,7 +622,7 @@ function publishToPurple( &$pdfJob ){
     if ( autoSetPreview( $pdfJob['brand'] ))
     {
         //$purple->debugOn();
-        print EOL ." make the issueVersion previewable [$issueVersionID]" . EOL;
+        //print EOL ." make the issueVersion previewable [$issueVersionID]" . EOL;
         $purple->issueVersionPreview( $issueVersionID );
         addToReport("set version to preview");
         //$purple->debugOff();
@@ -608,7 +630,7 @@ function publishToPurple( &$pdfJob ){
 
     if ( autoSetPublish( $pdfJob['brand'] )) {
         //$purple->debugOn();
-        print EOL . " Set the issueVersion Published [$issueVersionID]" . EOL;
+        //print EOL . " Set the issueVersion Published [$issueVersionID]" . EOL;
         $purple->issueVersionPublish($issueVersionID);
         addToReport("set version to Publish");
         //$purple->debugOff();
@@ -688,10 +710,10 @@ function autoSetPreview( $brand )
 {
     $autoPreview = false;
     $brandMapping = getBrandInfo( $brand);
-    if ( $brandMapping)
+    if ( $brandMapping )
     {
        if ( array_key_exists( 'AUTO_SETPREVIEW',$brandMapping)) {
-        $autoPreview = $brandMapping[$brand]['AUTO_SETPREVIEW'];
+        $autoPreview = $brandMapping['AUTO_SETPREVIEW'];
         }
     }
     LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG', "return with autoPreview:" . print_r($autoPreview,1));
@@ -705,7 +727,7 @@ function autoSetPublish( $brand )
     if ( $brandMapping)
     {
         if ( array_key_exists( 'AUTO_SETPUBLISH',$brandMapping)) {
-            $autoPublish = $brandMapping[$brand]['AUTO_SETPUBLISH'];
+            $autoPublish = $brandMapping['AUTO_SETPUBLISH'];
         }
     }
     LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG', "return with autoPublish:" . print_r($autoPublish,1));
