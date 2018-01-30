@@ -199,6 +199,10 @@ if ( ! file_exists($pdfJob['outputFile'])) {
 // ---------------
 if ( SENDTOSPRYLAB &&
      file_exists($pdfJob['outputFile']) ) {
+     
+    //read the PDFproperties
+    $pdfJob['PDFproperties'] = mapPDFProperties( $pdfJob['brand'] );
+     
     addToReport('Sending PDF-file ['. $pdfJob['outputFile'].'] to SpryLab');
     LogHandler::Log( 'PurplePublish', 'DEBUG',"Ouputfile found , sending to Purple");
     // call publishTo functionality
@@ -213,7 +217,7 @@ if ( SENDTOSPRYLAB &&
         print "<h3>Issue succesfully published</h3>" . EOL;
 
     }
-    print "<img src='images/purple-logo.png'><a target='_blank' href='https://staging.purplemanager.com/#issueDetail;id=" . $pdfJob['purple_issueid'] . "'>Click here to see this issue on PurpleManager</a>";
+    print "<img src='images/purple-logo.png'><a target='_blank' href='" . PURPLE_SERVER_URL . "/#issueDetail;id=" . $pdfJob['purple_issueid'] . "'>Click here to see this issue on PurpleManager</a>";
 
 }
 
@@ -271,7 +275,7 @@ function getPagesAsArray(  $inPub, $inIssue, $inEdi  )
         $request->Ticket = $ticket;
         $request->Issue = new Issue();
         $request->Issue->Id = $issueId;
-        $request->Issue->Name = '';
+        //$request->Issue->Name = '';
         
         $request->Issue->OverrulePublication = false;
         $request->IDs = null;
@@ -279,7 +283,7 @@ function getPagesAsArray(  $inPub, $inIssue, $inEdi  )
         if ( $editionId != -1 ) {
             $request->Edition = new Edition();
             $request->Edition->Id = $editionId;
-            $request->Edition->Name = '';
+           // $request->Edition->Name = '';
         }
         // #001 end
         LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG', "Calling getPagesInfo: " . print_r( $request, 1 ) );
@@ -612,7 +616,7 @@ function publishToPurple( &$pdfJob ){
     $purplePG->detail = "Uploading content";
     $purplePG->actualCount++;
     $purplePG->pbUpdate();
-    $pdfUpload = $purple->uploadVersionData( $issueVersionID, $pdfJob['outputFile'] );
+    $pdfUpload = $purple->uploadVersionData( $issueVersionID, $pdfJob['outputFile'], $pdfJob['PDFproperties'] );
     if ( $pdfUpload === false){
         print "ERROR: pdfUpload failed";
         return false;
@@ -671,7 +675,7 @@ function mapEnterpriseBrand( $brand, $purplePublications)
 {
     $brandMapping = unserialize( PURPLE_BRANDMAPPING);
     $purplePubId = false;
-    LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG', "BrandMApping:" . print_r($brandMapping,1));
+    //LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG', "BrandMApping:" . print_r($brandMapping,1));
     if ( array_key_exists( $brand,$brandMapping)){
 
         $purplePublication = $brandMapping[$brand]['PUBLICATION'];
@@ -694,7 +698,7 @@ function mapEnterpriseStatus( $brand )
 {
     $brandMapping = unserialize( PURPLE_BRANDMAPPING);
     $statusList = array();
-    LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG', "BrandMApping:" . print_r($brandMapping,1));
+    //LogHandler::Log( '-mapEnterpriseStatus-', 'DEBUG', "BrandMApping:" . print_r($brandMapping,1));
     if ( array_key_exists( $brand,$brandMapping)){
         if ( array_key_exists( 'VALIDSTATUS',$brandMapping[$brand])) {
             $statusList = $brandMapping[$brand]['VALIDSTATUS'];
@@ -704,6 +708,34 @@ function mapEnterpriseStatus( $brand )
     return $statusList;
 }
 
+
+/*
+// take the enterprise brand,
+// return the PDFproperties as array
+ */
+function mapPDFProperties( $brand )
+{
+    $brandMapping = unserialize( PURPLE_BRANDMAPPING);
+    $PDFPropertiesFile = 'PDFProperties_Generic.php';
+    $PDFproperties = array();
+    //LogHandler::Log( '-mapPDFProperties-', 'DEBUG', "BrandMapping:" . print_r($brandMapping,1));
+    if ( array_key_exists( $brand,$brandMapping)){
+        if ( array_key_exists( 'PDF_PROPERTIES',$brandMapping[$brand]) &&
+        	 $brandMapping[$brand]['PDF_PROPERTIES'] != '' ) {
+            $PDFPropertiesFile = $brandMapping[$brand]['PDF_PROPERTIES'];
+        }
+    }
+    LogHandler::Log( '-mapPDFProperties-', 'DEBUG', "Using PDFProperties File:" . $PDFPropertiesFile);
+    // see if the file exists
+    if ( file_exists( __DIR__ . '/PDFprofiles/' . $PDFPropertiesFile )){
+    	// load the file
+    	LogHandler::Log( '-mapPDFProperties-', 'DEBUG', "Loading PDF properties");
+    	include __DIR__ . '/PDFprofiles/' . $PDFPropertiesFile;
+    	
+    }
+    LogHandler::Log( '-mapPDFProperties-', 'DEBUG', "PDFproperties:" . print_r($PDFproperties,1));
+    return $PDFproperties;
+}
 
 
 function autoSetPreview( $brand )

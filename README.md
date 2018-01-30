@@ -111,6 +111,29 @@ It will be usefull to switch on debug logging for Enterprise as this will show t
 
 
 
+## Additional PDF options
+The behavior of the PDF transformation can be controlled by settings. The standard settings are defined in the file `~/PDFoptions/PDFProperties_Generic.php`
+
+Changes made to this file will be used for all brands/issues.
+
+### Overrule PDFproperties for a brand
+To allow different PDFproperties for a brand, it is possible to overrule the standard settings.
+
+This can be done as follows:
+1 - copy the `~/PDFoptions/PDFProperties_Generic.php` to `~/PDFoptions/PDFProperties_<brand>.php`
+
+where `<brand>` needs to be replaced with the name of the brand to overrule, spaces can be skipped.
+
+Then, in the `~/config.php` in the PURPLE_BRANDMAPPING section, you can specify the name of the brand specific PDFproperties into the field `PDF_PROPERTIES`
+
+for example:
+
+` 'PDF_PROPERTIES' => 'PDFProperties_WWNews.php'` 
+
+For this brand the settings in the specified file will then be used.
+
+
+
 
 
 

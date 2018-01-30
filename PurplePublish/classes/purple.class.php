@@ -8,10 +8,13 @@ class purple
 	private $_configuration = null;
 	private $_debug = false;
 	
+	private $_backend = '';
+	
 	
 	public function __construct( $serverURL )
 	{
 		$this->_serverURL = $serverURL;
+		$this->_backend = $this->_serverURL .'/purple-manager-backend';
 		$this->_xrkey = uniqid();
 		$this->_debug = false;
 	}
@@ -28,7 +31,7 @@ class purple
 	
 	public function configuration( )
 	{
-		$restCall = $this->_serverURL . '/configuration';
+		$restCall = $this->_backend . '/configuration';
 		$params = array( );
 		$headers = array();;
 		$response = $this->request( 'GET', $restCall, $params, $headers );
@@ -48,7 +51,7 @@ class purple
 	
 	public function logon( $user, $passwd )
 	{
-		$restCall = $this->_serverURL . '/auth/login';
+		$restCall = $this->_backend . '/auth/login';
 		$params = array( 'email' => $user, 'password' => $passwd );
 		$headers = array();;
 		$response = $this->request( 'POST', $restCall, $params, $headers );
@@ -69,7 +72,7 @@ class purple
 	public function logout()
 	{
 		if (! $this->isLoggedIn() ) { return false ; }
-		$restCall = $this->_serverURL . '/auth/logout';
+		$restCall = $this->_backend . '/auth/logout';
 		$params = array();
 		$headers = array();;
 		$response = $this->request( 'POST', $restCall, $params, $headers );
@@ -89,7 +92,7 @@ class purple
 	public function publicationList()
 	{
 		if (! $this->isLoggedIn() ) { return false ; }
-		$restCall = $this->_serverURL . '/publication/list';
+		$restCall = $this->_backend . '/publication/list';
 		$params = array();
 		$headers = array();;
 		$response = $this->request( 'GET', $restCall, $params, $headers );
@@ -106,7 +109,7 @@ class purple
 	public function issuesList( $publicationID)
 	{
 		if (! $this->isLoggedIn() ) { return false ; }
-		$restCall = $this->_serverURL . '/publication/listissues';
+		$restCall = $this->_backend . '/publication/listissues';
 		$params = array('publicationId' => $publicationID );
 		$headers = array();;
 		$response = $this->request( 'GET', $restCall, $params, $headers );
@@ -126,7 +129,7 @@ class purple
 	{
 		if (! $this->isLoggedIn() ) { return false ; }
 		
-		$restCall = $this->_serverURL . '/issue';
+		$restCall = $this->_backend . '/issue';
 		
 		$params = array('publicationId' => $publicationID,
 					    'name' 			=> $name,
@@ -151,7 +154,7 @@ class purple
 	{
 		if (! $this->isLoggedIn() ) { return false ; }
 		
-		$restCall = $this->_serverURL . '/version';
+		$restCall = $this->_backend . '/version';
 		
 		$params = array(
 						'issueId'       => $issueID ,
@@ -173,7 +176,7 @@ class purple
 	{
 		if (! $this->isLoggedIn() ) { return false ; }
 		
-		$restCall = $this->_serverURL . '/issue/listversions';
+		$restCall = $this->_backend . '/issue/listversions';
 		
 		$params = array(
 						'issueId'       => $issueID ,
@@ -238,7 +241,7 @@ class purple
     {
         if (! $this->isLoggedIn() ) { return false ; }
 
-        $restCall = $this->_serverURL . '/version/activate';
+        $restCall = $this->_backend . '/version/activate';
 
         $params = array('versionId' => $issueVersionID );
         $headers = array();;
@@ -257,7 +260,7 @@ class purple
     {
         if (! $this->isLoggedIn() ) { return false ; }
 
-        $restCall = $this->_serverURL . '/version/deactivate';
+        $restCall = $this->_backend . '/version/deactivate';
 
         $params = array('versionId' => $issueVersionID );
         $headers = array();;
@@ -276,7 +279,7 @@ class purple
     {
         if (! $this->isLoggedIn() ) { return false ; }
 
-        $restCall = $this->_serverURL . '/version/preview';
+        $restCall = $this->_backend . '/version/preview';
 
         $params = array('versionId' => $issueVersionID );
         $headers = array();;
@@ -295,7 +298,7 @@ class purple
     {
         if (! $this->isLoggedIn() ) { return false ; }
 
-        $restCall = $this->_serverURL . '/version/notpreview';
+        $restCall = $this->_backend . '/version/notpreview';
 
         $params = array('versionId' => $issueVersionID );
         $headers = array();;
@@ -314,7 +317,7 @@ class purple
     {
         if (! $this->isLoggedIn() ) { return false ; }
 
-        $restCall = $this->_serverURL . '/version/comingsoon';
+        $restCall = $this->_backend . '/version/comingsoon';
 
         $params = array('versionId' => $issueVersionID );
         $headers = array();;
@@ -333,7 +336,7 @@ class purple
     {
         if (! $this->isLoggedIn() ) { return false ; }
 
-        $restCall = $this->_serverURL . '/version/notcomingsoon';
+        $restCall = $this->_backend . '/version/notcomingsoon';
 
         $params = array('versionId' => $issueVersionID );
         $headers = array();;
@@ -350,15 +353,19 @@ class purple
 	
 	
 	
-	public function uploadVersionData( $issueVersionID, $file)
+	public function uploadVersionData( $issueVersionID, $file, $PDFproperties)
 	{
 		if (! $this->isLoggedIn() ) { return false ; }
 		
-		$restCall = $this->_serverURL . '/package/uploadTransform';
+		$restCall = $this->_backend . '/package/uploadTransform';
 
 		$params = array('versionId' => $issueVersionID,
 					    'type' 			=> 'content_bundle',
 					    'file' 			=> $file );
+					    
+		// add the PDFproperties to the params
+		$params = array_merge( $params, $PDFproperties );			    
+			    
 		$headers = array();;
 		$response = $this->request( 'POSTFORM', $restCall, $params, $headers );
 		if ( $this->responseHasError( $response ))
@@ -448,6 +455,9 @@ class purple
 		$headers[] =  "xr: " . $this->_xrkey ;
 		$url = $url . '?xr=' . $this->_xrkey;
 		
+		if ($debug) {
+			echo "<br>params<hr>:" . print_r($params,1) . "<br>";
+		}
 
 		try {
             // prepare the URL
