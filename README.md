@@ -49,7 +49,7 @@ Open the purplePublish/config.php file and take care you set the correct URL (st
 
 
 
-### 3.Add PurplePublish button to ContentStation v9
+### 3a.Add PurplePublish button to ContentStation v9
 
 Please note: This works currently only with ContentStation air (v9)	
 
@@ -65,6 +65,25 @@ Save the file and restart ContentStation.
 
 Now login to ContentStation, open the Publication-Overview and check if you see the small PurlePublish Icon on the top-bar.
 
+### 3b.Add PurplePublish button to ContentStation v11
+ContentStation v11 is an html version of ContentStation and loading menu entries is a bit different.
+
+- open the <enterprise>/contentstation/config.js
+- look for the ``'publicationOverview: [`` section in the ``plugins`` section near the end.
+- add this line to the ``'publicationOverview: [`` section
+
+``'../config/plugins/PurplePublish/ContentStation/PO_MenuActions.js',`` 
+ 
+ it should look like:
+ 
+ 			publicationOverview: [
+ 				// other entries...
+ 				'../config/plugins/PurplePublish/ContentStation/PO_MenuActions.js',
+   			 ]``
+
+- Restart ContentStation, make sure that the cache is cleared.
+- In ContentStation, open the publicationOverview.
+- The PurplePublish menu should be in the menu that you can find top-right, under the 'three-dots'
 
 
 ### 4.Create PDF profile
