@@ -21,8 +21,12 @@ define ( 'SENDTOSPRYLAB' , true );
 define ( 'REMOVEPUBLISHEDFILES', false );
 
 
-// we need a tempfolder to publish to
-define ( 'PDF_TEMPFOLDER' , WEBEDITDIR ); // we need to have an tempdir that can be reached by IDS
+// we need a tempfolder to publish to ,
+// this one is as seen from Enterprise
+define ( 'PDF_TEMPFOLDER' , WEBEDITDIR ); // we need to have an tempdir that can be reached by Enterprise
+
+// this one is as seen from IDS
+define ( 'PDF_TEMPFOLDER_IDS' , WEBEDITDIRIDSERV ); // we need to have an tempdir that can be reached by IDS
 
 
 // the PDF profile to use for creating the PDF's

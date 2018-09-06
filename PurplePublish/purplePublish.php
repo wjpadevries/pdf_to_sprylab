@@ -93,9 +93,9 @@ if ( $pdfJob['edition'] != '-'){
 }
 
 // these are the files that will be created and uploaded to PurpleManager
-$pdfJob['outputFile'] = PDF_TEMPFOLDER . '/' . $outputFile . '.pdf';
-$pdfJob['coverImage'] = PDF_TEMPFOLDER . '/' . $outputFile . '.png';
-$pdfJob['bookFile']   = PDF_TEMPFOLDER . '/' . $outputFile . '.indb';
+$pdfJob['outputFile'] = PDF_TEMPFOLDER .  $outputFile . '.pdf'; // Enterprise should use this one
+$pdfJob['coverImage'] = PDF_TEMPFOLDER .  $outputFile . '.png';
+$pdfJob['bookFile']   = PDF_TEMPFOLDER .  $outputFile . '.indb';
 
 // -----------------------
 // clean up before we run
@@ -178,13 +178,12 @@ if ( ! file_exists($pdfJob['outputFile'])) {
     $pg->pbUpdate();
     IDSCreatePDF($pdfJob);
 
-
-    $pg->detail = "Combine pages to one PDF";
-    $pg->actualCount++;
-    $pg->pbUpdate();
-
     /* addToReport( "Combine pages to one PDF :" . $pdfJob['outputFile']  );
 
+	$pg->detail = "Combine pages to one PDF";
+    $pg->actualCount++;
+    $pg->pbUpdate();
+    
     if (! combinePDF($pdfJob)) {
         print "<div class='error'>ERROR: Failed to create PDF</div>" . EOL;
         LogHandler::Log( 'PurplePublish', 'DEBUG',"ERROR: while creating outputfile");
@@ -450,6 +449,18 @@ function IDSCreatePDF  ( $IDSjob )
 
     $serverVersion = BizFileStoreXmpFileInfo::getInDesignDocumentVersion($layoutID);
     LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG',  "ServerVersion: " . print_r( $serverVersion,1));
+
+    // the IDSjob can contain settings/paths that point to the Enterprise side of the tempfolder
+    // so before going to IDS we change these paths to the IDS side of the tempfolder
+    // copy the $IDSjob so we do not need to change back
+
+    // perform a replace in the object as a string
+    LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG',"Preparing IDSjob [".PDF_TEMPFOLDER."] [".PDF_TEMPFOLDER_IDS."]");
+    $toIDSjob = convertIDSPath($IDSjob, PDF_TEMPFOLDER, PDF_TEMPFOLDER_IDS);
+    LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG', "toIDSjob:" . print_r($toIDSjob,1));
+
+
+
     $job = new InDesignServerJob();
     $job->JobScript = $scriptContent;
     $job->JobParams = array(
@@ -457,7 +468,7 @@ function IDSCreatePDF  ( $IDSjob )
         'layout' => $layoutID,
         'logfile' => WEBEDITDIRIDSERV . 'layout-' . $layoutID . '.log', // default = log to InDesign Server console, specify writable file in here
         'delay' => defined('IDSA_WAIT_BETWEEN_OPEN_AND_SAVE') ? IDSA_WAIT_BETWEEN_OPEN_AND_SAVE : 0,
-        'IDSJOB' => json_encode($IDSjob),
+        'IDSJOB' => json_encode($toIDSjob),
         'reportfile' => $idsReport,
     );
     $job->JobType = 'CREATEPDF';
@@ -495,6 +506,21 @@ function IDSCreatePDF  ( $IDSjob )
 }
 
 
+// convert all Enterprise paths to IDS paths
+function convertIDSPath($IDSjob, $PDF_TEMPFOLDER, $PDF_TEMPFOLDER_IDS)
+{
+    $toIDSjob = array();
+    foreach ( $IDSjob as $key => $value){
+       if ( is_array ($value) ){
+            $newValue = convertIDSPath($value, $PDF_TEMPFOLDER, $PDF_TEMPFOLDER_IDS);
+       }else{
+           $newValue = str_replace($PDF_TEMPFOLDER, $PDF_TEMPFOLDER_IDS ,$value);
+       }
+       $toIDSjob[$key] = $newValue;
+    }
+
+    return $toIDSjob;
+}
 
 function combinePDF( $pdfJob ){
     LogHandler::Log( '-PP-getPagesAsArray-', 'DEBUG', "enter: combinePDF");
